@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-gold: #d4af37;
+  --color-brand-green: #10b981;
+  --color-slate-900: #090d1a;
+  --color-slate-800: #111827;
+  --color-slate-700: #1f293d;
+  --color-slate-600: #2e3d52;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* ─── Base Styles ─── */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-slate-900);
+}
+
+/* ─── Homepage Animations ─── */
+.parallax-img {
+  transition: transform 0.5s ease;
+}
+
+.group:hover .parallax-img {
+  transform: scale(1.05);
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-brand-gold);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ─── Dashboard Scrollbar ─── */
+.dashboard-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-slate-800);
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-slate-600);
+  border-radius: 3px;
+}
+
+.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-gold);
+}
+
+/* ─── Sidebar Transitions ─── */
+.sidebar-transition {
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* ─── Loading Spinner ─── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 1.5s linear infinite;
+}

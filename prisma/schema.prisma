@@ -1,0 +1,224 @@
+// Prisma schema for FMS (Fleet Management System)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums (SQLite doesn't support native enums, so we use String fields) ───
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  userId             String    @unique // e.g. "4262"
+  name               String    // e.g. "User 4262"
+  passwordHash       String
+  role               String    // ADMIN, TRANSPORT_MANAGER, FLEET_MANAGER, DRIVER, MECHANIC, FUEL_CONTROLLER, HR
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  driver             Driver?
+  employee           Employee?
+  bookings           Booking[]          @relation("BookingRequester")
+  fuelTransactions   FuelTransaction[]  @relation("FuelController")
+  maintenanceJobs    MaintenanceJob[]   @relation("AssignedMechanic")
+  auditLogs          AuditLog[]
+}
+
+model Vehicle {
+  id               Int       @id @default(autoincrement())
+  registration     String    @unique
+  type             String    // Sedan, SUV, Pickup, Bus, Truck, Van
+  make             String
+  model            String
+  year             Int
+  status           String    @default("IDLE") // IDLE, FIELD_WORK, GARAGE, OUT_OF_SERVICE
+  mileage          Int       @default(0)
+  fuelType         String    @default("Diesel") // Diesel, Petrol
+  nextServiceDate  DateTime?
+  currentDriverId  Int?      @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  currentDriver    Driver?           @relation("CurrentVehicleDriver", fields: [currentDriverId], references: [id])
+  maintenanceJobs  MaintenanceJob[]
+  vehicleServices  VehicleService[]
+  fuelTransactions FuelTransaction[]
+  bookings         Booking[]
+  assignments      Assignment[]
+}
+
+model Driver {
+  id                       Int       @id @default(autoincrement())
+  driverId                 String?   @unique
+  employeeId               Int?      @unique
+  userId                   Int?      @unique
+  licenseNumber            String    @unique
+  licenseCategory          String?   @default("Automobile") // Automobile, Commercial, Heavy Truck, Public Bus
+  licenseIssueDate         DateTime?
+  licenseExpiry            DateTime
+  status                   String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ON_LEAVE, AVAILABLE, ASSIGNED
+  yearsOfExperience        Int?      @default(0)
+  medicalCertificateExpiry DateTime?
+  trainingStatus           String?   @default("UP_TO_DATE") // UP_TO_DATE, PENDING, EXPIRED, NOT_REQUIRED
+  trainingExpiryDate       DateTime?
+  assignedVehicleId        Int?      @unique
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  // Relations
+  employee                 Employee? @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  user                     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedVehicle          Vehicle?  @relation("CurrentVehicleDriver")
+  assignments              Assignment[]
+  driverBehaviors          DriverBehavior[]
+}
+
+model Employee {
+  id                           Int       @id @default(autoincrement())
+  employeeId                   String?   @unique
+  userId                       Int?      @unique
+  firstName                    String?
+  middleName                   String?
+  lastName                     String?
+  fullName                     String?
+  gender                       String?   // Male, Female, Other
+  dateOfBirth                  DateTime?
+  phoneNumber                  String?
+  alternatePhoneNumber         String?
+  email                        String?
+  address                      String?
+  city                         String?
+  department                   String
+  position                     String
+  employmentType               String?   @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, TEMPORARY
+  hireDate                     DateTime?
+  status                       String    @default("ACTIVE") // ACTIVE, INACTIVE, ON_LEAVE, TERMINATED
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactRelationship String?
+  notes                        String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+
+  // Relations
+  user                         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  driver                       Driver?
+}
+
+model Booking {
+  id          Int       @id @default(autoincrement())
+  requesterId Int
+  vehicleId   Int?
+  driverId    Int?
+  destination String
+  purpose     String
+  date        DateTime
+  returnDate  DateTime?
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED, CANCELLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  requester   User      @relation("BookingRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  vehicle     Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+}
+
+model Assignment {
+  id          Int       @id @default(autoincrement())
+  vehicleId   Int
+  driverId    Int
+  destination String
+  departure   DateTime
+  returnTime  DateTime?
+  status      String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driver      Driver    @relation(fields: [driverId], references: [id], onDelete: Restrict)
+}
+
+model MaintenanceJob {
+  id          Int       @id @default(autoincrement())
+  vehicleId   Int
+  mechanicId  Int?
+  problem     String
+  description String?
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  mechanic    User?     @relation("AssignedMechanic", fields: [mechanicId], references: [id], onDelete: SetNull)
+}
+
+model VehicleService {
+  id          Int       @id @default(autoincrement())
+  vehicleId   Int
+  serviceType String    // Oil Change, Tire Rotation, Brake Inspection, Full Service, etc.
+  dueDate     DateTime
+  mileage     Int?
+  status      String    @default("SCHEDULED") // SCHEDULED, OVERDUE, COMPLETED, CANCELLED
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+}
+
+model FuelTransaction {
+  id           Int       @id @default(autoincrement())
+  vehicleId    Int
+  controllerId Int?
+  fuelType     String    // Diesel, Petrol
+  quantity     Float     // liters
+  cost         Float
+  odometer     Int?
+  date         DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  vehicle      Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  controller   User?     @relation("FuelController", fields: [controllerId], references: [id], onDelete: SetNull)
+}
+
+model DriverBehavior {
+  id            Int       @id @default(autoincrement())
+  driverId      Int
+  speedEvents   Int       @default(0)
+  harshBraking  Int       @default(0)
+  highRPM       Int       @default(0)
+  acceleration  Int       @default(0)
+  date          DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  driver        Driver    @relation(fields: [driverId], references: [id], onDelete: Restrict)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  userId    String   // FK to User.userId
+  action    String   // LOGIN, LOGOUT, PASSWORD_CHANGE, etc.
+  target    String?  // e.g. "vehicle:12", "user:4265"
+  details   String?  // JSON string with additional context
+  ipAddress String?
+
+  // Relations — onDelete: Restrict preserves audit history
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Restrict)
+}
