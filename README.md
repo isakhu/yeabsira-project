@@ -38,28 +38,7 @@ npx prisma migrate dev
 npm run db:seed:dev
 ```
 
-### 5. Running the Application
-Start the development server:
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
-
-## 🔑 Demo & Test User Accounts
-
-All roles can sign in with their User ID and Password at `/signin`.
-
-| User ID | Role | Title | Password | Dashboard Route |
-| :--- | :--- | :--- | :--- | :--- |
-| **`4262`** | `ADMIN` | System Administrator | `AdminPass2026!` | `/admin` |
-| **`4263`** | `TRANSPORT_MANAGER` | Transport Manager | `TransPass2026!` | `/transport` |
-| **`4264`** | `FLEET_MANAGER` | Fleet Manager | `FleetPass2026!` | `/fleet` |
-| **`4265`** | `DRIVER` | Driver | `DriverPass2026!` | `/driver` |
-| **`4266`** | `MECHANIC` | Garage Mechanic | `MechPass2026!` | `/mechanic` |
-| **`4267`** | `FUEL_CONTROLLER` | Fuel Controller | `FuelPass2026!` | `/fuel` |
-| **`4268`** | `HR` | HR Manager | `HRPass2026!` | `/hr` |
 
 ---
 
